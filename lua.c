@@ -43,6 +43,8 @@
 #include "apteryx.h"
 #include "internal.h"
 #include <pthread.h>
+#include <glib.h>
+#include <glib-unix.h>
 
 static lua_State *gL = NULL;
 pthread_mutex_t gL_lock;
@@ -355,13 +357,23 @@ lua_apteryx_unwatch (lua_State *L)
     return 1;
 }
 
+/* dummy signal handler */
+
+static gboolean
+lua_apteryx_mainloop_stop (gpointer _)
+{
+    return true;
+}
+
 int
 lua_apteryx_mainloop (lua_State *L)
 {
     gL = L;
     pthread_mutex_unlock (&gL_lock);
+    g_unix_signal_add (SIGINT, lua_apteryx_mainloop_stop, NULL);
+    g_unix_signal_add (SIGTERM, lua_apteryx_mainloop_stop, NULL);
     pause ();
-    exit (0);
+    return 1;
 }
 
 int
